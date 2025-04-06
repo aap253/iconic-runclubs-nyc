@@ -36,7 +36,14 @@
         <span class="navbar-brand mb-0 h1 mx-auto text-dark">Iconic NYC Run Clubs</span>
     </nav>
     <footer class="navbar navbar-light bg-white fixed-bottom">
-        <span class="navbar-brand mb-0 h5 mx-auto text-dark" style="font-size: 12px;">Atmika Pai</span>
+        <div class="container text-center d-flex flex-column">
+            <span class="navbar-brand mb-0 h5 mx-auto text-dark" style="font-size: 12px;">Atmika Pai</span>
+            <div style="font-size: 8px; margin-top: -8px;">
+                <span>Inspired by <a href="https://www.iconicsandwiches.com/" target="_blank">Dan Dewitz's Iconic Sandwiches</a></span>
+                <span class="mx-1">|</span>
+                <span><a href="https://docs.google.com/spreadsheets/d/1QFRce-siqNQsuTEtmCf4zg5uE0W4fTPdJjEDbDVNRLQ/edit?usp=sharing" target="_blank">Original Run Club List</a></span>
+            </div>
+        </div>
     </footer>
 
     <!-- Filter Controls -->
@@ -1834,14 +1841,12 @@
                 let result = '<strong>Meeting Times:</strong><br>';
                 
                 for (let i = 0; i < Math.min(daysArray.length, timesArray.length); i++) {
-                    // Convert time format (e.g., "7:00 PM" to "7:00pm")
                     let time = timesArray[i];
                     if (time.includes(' ')) {
                         const [t, ampm] = time.split(' ');
                         time = t + ampm.toLowerCase();
                     }
                     
-                    // Skip any "nan" times
                     if (time.toLowerCase() === 'nan') continue;
                     
                     result += `${daysArray[i]} @ ${time}<br>`;
