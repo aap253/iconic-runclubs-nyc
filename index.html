@@ -48,6 +48,7 @@
 
     <!-- Filter Controls -->
     <div class="filter-controls">
+        
         <div class="form-group">
             <label for="boroughFilter">Borough?</label>
             <select id="boroughFilter" class="form-control form-control-sm">
@@ -68,6 +69,10 @@
                 <option value="Weekday">Weekday</option>
             </select>
         </div>
+        <div class="mt-2 text-left" style="font-size: 8px; color: #999999; transform: scale(0.625); transform-origin: left top;">
+            Please allow map to fully load before applying filters
+        </div>
+        
     </div>
 
     <div id="map"></div>
@@ -1937,7 +1942,7 @@
                     // Process next location with a delay to avoid hitting rate limits
                     setTimeout(function() {
                         processLocation(index + 1);
-                    }, 100); // 100ms delay between geocoding requests
+                    }, 1); // 100ms delay between geocoding requests
                 });
             }
             
