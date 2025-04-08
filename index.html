@@ -21,11 +21,21 @@
             padding: 10px;
             border-radius: 5px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            width: 15%;
+            min-width: 180px; 
         }
         .meeting-times {
             text-align: center;
             margin: 0 auto;
-            max-width: 80%;
+            max-width: 60%;
+        }
+        .filter-label {
+            font-weight: 500;
+            font-size: 0.9rem;
+            margin-bottom: 3px;
+        }
+        .filter-section {
+            margin-bottom: 10px;
         }
     </style>
 </head>
@@ -48,11 +58,12 @@
 
     <!-- Filter Controls -->
     <div class="filter-controls">
+        <h6 class="mb-2">Filters</h6>
         
-        <div class="form-group">
-            <label for="boroughFilter">Borough?</label>
+        <div class="filter-section">
+            <label for="boroughFilter" class="filter-label">Borough</label>
             <select id="boroughFilter" class="form-control form-control-sm">
-                <option value="all"> </option>
+                <option value="all">All Boroughs</option>
                 <option value="Bronx">Bronx</option>
                 <option value="Brooklyn">Brooklyn</option>
                 <option value="Manhattan">Manhattan</option>
@@ -60,18 +71,50 @@
                 <option value="Staten Island">Staten Island</option>
             </select>
         </div>
-        <div class="form-group mt-2">
-            <label for="dayTypeFilter">Weekday vs Weekend?</label>
+        
+        <div class="filter-section">
+            <label for="dayTypeFilter" class="filter-label">Weekday/Weekend</label>
             <select id="dayTypeFilter" class="form-control form-control-sm">
-                <option value="all"> </option>
+                <option value="all">All Days</option>
                 <option value="Both">Both</option>
                 <option value="Weekend">Weekend</option>
                 <option value="Weekday">Weekday</option>
             </select>
         </div>
-        <div class="mt-2 text-left" style="font-size: 8px; color: #999999; transform: scale(0.725); transform-origin: left top;">
+        
+        <div class="filter-section">
+            <label for="dayFilter" class="filter-label">Specific Day</label>
+            <select id="dayFilter" class="form-control form-control-sm">
+                <option value="all">Any Day</option>
+                <option value="Monday">Monday</option>
+                <option value="Tuesday">Tuesday</option>
+                <option value="Wednesday">Wednesday</option>
+                <option value="Thursday">Thursday</option>
+                <option value="Friday">Friday</option>
+                <option value="Saturday">Saturday</option>
+                <option value="Sunday">Sunday</option>
+            </select>
+        </div>
+        
+        <div class="filter-section">
+            <label for="timeFilter" class="filter-label">Time of Day</label>
+            <select id="timeFilter" class="form-control form-control-sm">
+                <option value="all">Any Time</option>
+                <option value="morning">Morning (Before 12PM)</option>
+                <option value="afternoon">Afternoon (12-5PM)</option>
+                <option value="evening">Evening (After 5PM)</option>
+            </select>
+        </div>
+
+        <div class="text-left" style="font-size: 10px; color: #999999;  transform-origin: left top;">
+            Showing <span id="visibleCount">0</span> of <span id="totalCount">0</span> clubs
+        </div>
+        <div class="mt-2 text-left" style="font-size: 5px; color: #999999; transform: scale(0.9); transform-origin: left top;">
             Please allow map to fully load before applying filters
         </div>
+        
+        <button id="resetFilters" class="btn btn-sm btn-outline-secondary mt-2">Reset Filters</button>
+        
         
     </div>
 
@@ -1814,14 +1857,19 @@
   'Times': '6:45 PM',
   'Distance': '5K'}];
 
+            // Replace with the complete array from your paste.txt file
+            // var locations = [...]; // Your full array goes here
+            
             // Create markers collection for filtering
             var markers = [];
+            var totalMarkers = 0;
+            var visibleMarkers = 0;
             
             // Get borough colors for marker differentiation
             const boroughColors = {
-                'Bronx': 'green',
+                'Bronx': 'pink',
                 'Brooklyn': 'blue',
-                'Manhattan': 'pink',
+                'Manhattan': 'purple',
                 'Queens': 'yellow',
                 'Staten Island': 'orange'
             };
@@ -1837,6 +1885,37 @@
                        value.toString().toLowerCase() === 'nan';
             }
             
+            // Function to check if a day string contains a specific day
+            function containsDay(daysString, day) {
+                if (!daysString) return false;
+                return daysString.includes(day);
+            }
+            
+            // Function to determine time period (morning, afternoon, evening)
+            function getTimePeriod(timeString) {
+                if (!timeString || timeString.toLowerCase() === 'nan' || timeString.toLowerCase() === 'varies') {
+                    return 'unknown';
+                }
+                
+                // Extract time from string like "7:00 PM" or "7:00PM"
+                const timeRegex = /(\d+):?(\d*)\s*(AM|PM|am|pm)?/;
+                const match = timeString.match(timeRegex);
+                
+                if (!match) return 'unknown';
+                
+                let hour = parseInt(match[1]);
+                const isPM = match[3] && match[3].toUpperCase() === 'PM';
+                
+                // Convert to 24-hour format
+                if (isPM && hour < 12) hour += 12;
+                if (!isPM && hour === 12) hour = 0;
+                
+                // Categorize by time period
+                if (hour < 12) return 'morning';
+                if (hour < 17) return 'afternoon';
+                return 'evening';
+            }
+            
             // Function to format meeting times
             function formatMeetingTimes(days, times) {
                 if (isEmpty(days) || isEmpty(times)) return '';
@@ -1849,7 +1928,7 @@
                     let time = timesArray[i];
                     if (time.includes(' ')) {
                         const [t, ampm] = time.split(' ');
-                        time = t + ampm.toLowerCase();
+                        time = t + ' ' + (ampm ? ampm.toLowerCase() : '');
                     }
                     
                     if (time.toLowerCase() === 'nan') continue;
@@ -1862,7 +1941,13 @@
             
             // Process each location with a slight delay to avoid hitting rate limits
             function processLocation(index) {
-                if (index >= locations.length) return;
+                if (index >= locations.length) {
+                    // Update marker counters when all locations are processed
+                    totalMarkers = markers.length;
+                    visibleMarkers = totalMarkers;
+                    updateMarkerCount();
+                    return;
+                }
                 
                 const loc = locations[index];
                 const color = boroughColors[loc.Borough] || 'red';
@@ -1870,12 +1955,27 @@
                 // Geocode the address to get coordinates
                 geocoder.geocode({ 'address': loc.Address }, function(results, status) {
                     if (status === 'OK') {
+                        // Process meeting times for filtering
+                        const timePeriods = [];
+                        if (loc.Times) {
+                            const timesArray = loc.Times.split(', ');
+                            for (let time of timesArray) {
+                                const period = getTimePeriod(time);
+                                if (period !== 'unknown' && !timePeriods.includes(period)) {
+                                    timePeriods.push(period);
+                                }
+                            }
+                        }
+                        
                         var marker = new google.maps.Marker({
                             position: results[0].geometry.location,
                             map: map,
                             title: loc.RunClubName,
                             borough: loc.Borough,
                             dayType: loc.DayType || 'Unknown',
+                            days: loc.Days,
+                            times: loc.Times,
+                            timePeriods: timePeriods,
                             // Using colored marker icons
                             icon: `https://maps.google.com/mapfiles/ms/icons/${color}-dot.png`
                         });
@@ -1894,12 +1994,10 @@
                             const lng = results[0].geometry.location.lng();
                             document.getElementById('getDirections').innerHTML = `
                                 <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}" 
-                                target="_blank">
+                                target="_blank" class="btn btn-sm btn-primary">
                                     Get Directions
                                 </a>
                             `;
-
-                            
                             
                             // Display Distance if available
                             const distance = loc['Distance'];
@@ -1922,8 +2020,6 @@
                             } else {
                                 meetingTimesElement.style.display = 'none';
                             }
-
-                            
                             
                             // Format website with link
                             let websiteDisplay = loc.Website;
@@ -1942,12 +2038,18 @@
                     // Process next location with a delay to avoid hitting rate limits
                     setTimeout(function() {
                         processLocation(index + 1);
-                    }, 1); // 100ms delay between geocoding requests
+                    }, 5); // 100ms delay between geocoding requests
                 });
             }
             
             // Start processing locations
             processLocation(0);
+            
+            // Update marker counter display
+            function updateMarkerCount() {
+                document.getElementById('visibleCount').textContent = visibleMarkers;
+                document.getElementById('totalCount').textContent = totalMarkers;
+            }
             
             // Filter by borough
             document.getElementById('boroughFilter').addEventListener('change', function() {
@@ -1959,19 +2061,57 @@
                 applyFilters();
             });
             
-            // Function to apply both filters
+            // Filter by specific day
+            document.getElementById('dayFilter').addEventListener('change', function() {
+                applyFilters();
+            });
+            
+            // Filter by time of day
+            document.getElementById('timeFilter').addEventListener('change', function() {
+                applyFilters();
+            });
+            
+            // Reset all filters
+            document.getElementById('resetFilters').addEventListener('click', function() {
+                document.getElementById('boroughFilter').value = 'all';
+                document.getElementById('dayTypeFilter').value = 'all';
+                document.getElementById('dayFilter').value = 'all';
+                document.getElementById('timeFilter').value = 'all';
+                applyFilters();
+            });
+            
+            // Function to apply all filters
             function applyFilters() {
                 const selectedBorough = document.getElementById('boroughFilter').value;
                 const selectedDayType = document.getElementById('dayTypeFilter').value;
+                const selectedDay = document.getElementById('dayFilter').value;
+                const selectedTimePeriod = document.getElementById('timeFilter').value;
+                
+                visibleMarkers = 0;
                 
                 markers.forEach(function(marker) {
-                    // Check if marker matches both filters (or "all" is selected)
+                    // Check if marker matches all filters (or "all" is selected)
                     const matchesBorough = (selectedBorough === 'all' || marker.borough === selectedBorough);
                     const matchesDayType = (selectedDayType === 'all' || marker.dayType === selectedDayType);
+                    const matchesDay = (selectedDay === 'all' || containsDay(marker.days, selectedDay));
                     
-                    // Show marker only if it matches both filters
-                    marker.setVisible(matchesBorough && matchesDayType);
+                    // Check if marker matches selected time period
+                    let matchesTime = true;
+                    if (selectedTimePeriod !== 'all') {
+                        matchesTime = marker.timePeriods && marker.timePeriods.includes(selectedTimePeriod);
+                    }
+                    
+                    // Show marker only if it matches all filters
+                    const isVisible = matchesBorough && matchesDayType && matchesDay && matchesTime;
+                    marker.setVisible(isVisible);
+                    
+                    if (isVisible) {
+                        visibleMarkers++;
+                    }
                 });
+                
+                // Update the counter
+                updateMarkerCount();
             }
         }
     </script>
