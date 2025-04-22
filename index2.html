@@ -7,54 +7,66 @@
     <title>NYC Run Clubs Map</title>
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4uf8Lj0fV6Fe2QQE-16A0Nd93vCfw1Ng&callback=initMap" async defer></script>
-    <style> 
+    <style>
+        body, html {
+          margin: 0;
+          padding: 0;
+          height: 100%;
+          overflow: hidden;
+        }
+        .main-container {
+          display: flex;
+          height: 100vh;
+          width: 100%;
+        }
+        .sidebar {
+          width: 300px;
+          background: white;
+          padding: 15px;
+          overflow-y: auto;
+          border-right: 1px solid #ddd;
+          box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+          z-index: 2;
+          padding-top: 70px;
+        }
         #map {
-            height: 100vh;
-            width: 100%;
-        }
-        .filter-controls {
-            position: absolute;
-            top: 60px;
-            left: 10px;
-            z-index: 1;
-            background: white;
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-            width: 15%;
-            min-width: 180px; 
-        }
-        .meeting-times {
-            text-align: center;
-            margin: 0 auto;
-            max-width: 60%;
+          flex-grow: 1;
+          height: 100%;
         }
         .filter-label {
-            font-weight: 500;
-            font-size: 0.9rem;
-            margin-bottom: 3px;
+          font-weight: 500;
+          font-size: 0.9rem;
+          margin-bottom: 3px;
         }
         .filter-section {
-            margin-bottom: 10px;
+            
+          margin-bottom: 10px;
+        }
+        .meeting-times {
+          text-align: center;
+          margin: 0 auto;
+          max-width: 60%;
+        }
+        @media (max-width: 768px) {
+          .sidebar {
+            width: 100%;
+            max-height: 50vh;
+            position: absolute;
+            top: 56px;
+            left: 0;
+            z-index: 999;
+          }
         }
 
-        @media (max-width: 768px) {
-            .filter-controls {
-                width: 90%;
-                left: 5%;
-                top: 70px;
-            }
-        }
-        
-    </style>
+      </style>
 </head>
 <body>
 
     <!-- Navbar -->
-    <nav class="navbar navbar-light bg-white fixed-top">
+    <nav class="navbar navbar-light bg-light fixed-top">
         <span class="navbar-brand mb-0 h1 mx-auto text-dark">Iconic NYC Run Clubs</span>
     </nav>
-    <footer class="navbar navbar-light bg-white fixed-bottom">
+    <footer class="navbar navbar-light bg-light fixed-bottom">
         <div class="container text-center d-flex flex-column">
             <span class="navbar-brand mb-0 h5 mx-auto text-dark" style="font-size: 12px;">
                By <a href="https://atmikapai.myportfolio.com/" target="_blank" style="color: inherit;">Atmika Pai</a>
@@ -68,68 +80,76 @@
     </footer>
 
     <!-- Filter Controls -->
-    <div class="filter-controls">
-        <h6 class="mb-2">Filters</h6>
-        
-        <div class="filter-section">
-            <label for="boroughFilter" class="filter-label">Borough</label>
-            <select id="boroughFilter" class="form-control form-control-sm">
-                <option value="all">All Boroughs</option>
-                <option value="Bronx">Bronx</option>
-                <option value="Brooklyn">Brooklyn</option>
-                <option value="Manhattan">Manhattan</option>
-                <option value="Queens">Queens</option>
-                <option value="Staten Island">Staten Island</option>
-            </select>
-        </div>
-        
-        <div class="filter-section">
-            <label for="dayTypeFilter" class="filter-label">Weekday/Weekend</label>
-            <select id="dayTypeFilter" class="form-control form-control-sm">
-                <option value="all">All Days</option>
-                <option value="Both">Both</option>
-                <option value="Weekend">Weekend</option>
-                <option value="Weekday">Weekday</option>
-            </select>
-        </div>
-        
-        <div class="filter-section">
-            <label for="dayFilter" class="filter-label">Specific Day</label>
-            <select id="dayFilter" class="form-control form-control-sm">
-                <option value="all">Any Day</option>
-                <option value="Monday">Monday</option>
-                <option value="Tuesday">Tuesday</option>
-                <option value="Wednesday">Wednesday</option>
-                <option value="Thursday">Thursday</option>
-                <option value="Friday">Friday</option>
-                <option value="Saturday">Saturday</option>
-                <option value="Sunday">Sunday</option>
-            </select>
-        </div>
-        
-        <div class="filter-section">
-            <label for="timeFilter" class="filter-label">Time of Day</label>
-            <select id="timeFilter" class="form-control form-control-sm">
-                <option value="all">Any Time</option>
-                <option value="morning">Morning (Before 12PM)</option>
-                <option value="afternoon">Afternoon (12-5PM)</option>
-                <option value="evening">Evening (After 5PM)</option>
-            </select>
-        </div>
+    <!-- Main layout: Sidebar + Map -->
+  <div class="main-container">
+    <!-- Sidebar -->
+    <div class="sidebar #f1f3f5">
+        <p class="text-muted small">
+                Use the filters below to explore run clubs across NYC by borough, day, and time.
+        </p>
+      <h6>Filters</h6>
+      
 
-        <div class="text-left" style="font-size: 10px; color: #999999;  transform-origin: left top;">
-            Showing <span id="visibleCount">0</span> of <span id="totalCount">0</span> clubs
-        </div>
-        <div class="mt-2 text-left" style="font-size: 5px; color: #999999; transform: scale(0.9); transform-origin: left top;">
-            Please allow map to fully load before applying filters
-        </div>
-        
-        <button id="resetFilters" class="btn btn-sm btn-outline-secondary mt-2">Reset Filters</button>
-        
-        
+      <div class="filter-section">
+        <label for="boroughFilter" class="filter-label">Borough</label>
+        <select id="boroughFilter" class="form-control form-control-sm">
+          <option value="all">All Boroughs</option>
+          <option value="Bronx">Bronx</option>
+          <option value="Brooklyn">Brooklyn</option>
+          <option value="Manhattan">Manhattan</option>
+          <option value="Queens">Queens</option>
+          <option value="Staten Island">Staten Island</option>
+        </select>
+      </div>
+
+      <div class="filter-section">
+        <label for="dayTypeFilter" class="filter-label">Weekday/Weekend</label>
+        <select id="dayTypeFilter" class="form-control form-control-sm">
+          <option value="all">All Days</option>
+          <option value="Both">Both</option>
+          <option value="Weekend">Weekend</option>
+          <option value="Weekday">Weekday</option>
+        </select>
+      </div>
+
+      <div class="filter-section">
+        <label for="dayFilter" class="filter-label">Specific Day</label>
+        <select id="dayFilter" class="form-control form-control-sm">
+          <option value="all">Any Day</option>
+          <option value="Monday">Monday</option>
+          <option value="Tuesday">Tuesday</option>
+          <option value="Wednesday">Wednesday</option>
+          <option value="Thursday">Thursday</option>
+          <option value="Friday">Friday</option>
+          <option value="Saturday">Saturday</option>
+          <option value="Sunday">Sunday</option>
+        </select>
+      </div>
+
+      <div class="filter-section">
+        <label for="timeFilter" class="filter-label">Time of Day</label>
+        <select id="timeFilter" class="form-control form-control-sm">
+          <option value="all">Any Time</option>
+          <option value="morning">Morning (Before 12PM)</option>
+          <option value="afternoon">Afternoon (12-5PM)</option>
+          <option value="evening">Evening (After 5PM)</option>
+        </select>
+      </div>
+
+      <div class="text-left" style="font-size: 10px; color: #999999;">
+        Showing <span id="visibleCount">0</span> of <span id="totalCount">0</span> clubs
+      </div>
+
+      <div class="mt-2 text-left" style="font-size: 5px; color: #999999;">
+        Please allow map to fully load before applying filters
+      </div>
+
+      <button id="resetFilters" class="btn btn-sm btn-outline-secondary mt-2">Reset Filters</button>
     </div>
 
+    <!-- Map -->
     <div id="map"></div>
+  </div>
 
     <!-- Bootstrap Modal -->
     <div class="modal fade" id="infoModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
